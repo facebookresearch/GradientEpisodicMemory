@@ -2,7 +2,7 @@
 *.txt
 *.pyc
 *.pdf
+*.tar.gz
+*.npz
 
-
-/data
-/model
+/data/raw/cifar-100-python
