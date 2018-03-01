@@ -1,2 +1,4 @@
 *.pt
 *.txt
+
+/data
