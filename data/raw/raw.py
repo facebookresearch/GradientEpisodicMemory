@@ -11,16 +11,16 @@ import torch
 import os
 
 cifar_path = "cifar-100-python.tar.gz"
-mnist_path = "wget https://www.cs.toronto.edu/~kriz/cifar-100-python.tar.gz"
+mnist_path = "mnist.npz"
 
-if os.path.isfile(cifar_path): 
+if not os.path.exists(cifar_path):
     # URL from: https://www.cs.toronto.edu/~kriz/cifar.html
     subprocess.call(cifar_path, shell=True)
 
 subprocess.call("tar xzfv cifar-100-python.tar.gz", shell=True)
 
 # URL from: https://github.com/fchollet/keras/blob/master/keras/datasets/mnist.py
-if os.path.isfile(mnist_path):
+if not os.path.exists(mnist_path):
     subprocess.call("wget https://s3.amazonaws.com/img-datasets/mnist.npz", shell=True)
 
 def unpickle(file):
