@@ -49,7 +49,7 @@ for dataset in datasets:
         matches = glob(model + '*' + dataset + '*.pt')
         if len(matches):
             data = torch.load(matches[0], map_location=lambda storage, loc: storage)
-            acc, bwt, fwt = data[3][5:]
+            acc, bwt, fwt = data[3][:]
             barplot[dataset][model]['acc'] = acc
             barplot[dataset][model]['bwt'] = bwt
             barplot[dataset][model]['fwt'] = fwt

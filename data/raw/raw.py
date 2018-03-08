@@ -8,13 +8,22 @@ import numpy as np
 import subprocess
 import pickle
 import torch
+import os
 
-# URL from: https://www.cs.toronto.edu/~kriz/cifar.html
-subprocess.call("wget https://www.cs.toronto.edu/~kriz/cifar-100-python.tar.gz", shell=True)
+cifar_path = "cifar-100-python.tar.gz"
+mnist_path = "mnist.npz"
+
+print(os.path.exists(cifar_path))
+
+if not os.path.exists(cifar_path):
+    # URL from: https://www.cs.toronto.edu/~kriz/cifar.html
+    subprocess.call("wget https://www.cs.toronto.edu/~kriz/cifar-100-python.tar.gz", shell=True)
+
 subprocess.call("tar xzfv cifar-100-python.tar.gz", shell=True)
 
 # URL from: https://github.com/fchollet/keras/blob/master/keras/datasets/mnist.py
-subprocess.call("wget https://s3.amazonaws.com/img-datasets/mnist.npz", shell=True)
+if not os.path.exists(mnist_path):
+    subprocess.call("wget https://s3.amazonaws.com/img-datasets/mnist.npz", shell=True)
 
 def unpickle(file):
     with open(file, 'rb') as fo:
