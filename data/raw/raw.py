@@ -13,9 +13,11 @@ import os
 cifar_path = "cifar-100-python.tar.gz"
 mnist_path = "mnist.npz"
 
+print(os.path.exists(cifar_path))
+
 if not os.path.exists(cifar_path):
     # URL from: https://www.cs.toronto.edu/~kriz/cifar.html
-    subprocess.call(cifar_path, shell=True)
+    subprocess.call("wget https://www.cs.toronto.edu/~kriz/cifar-100-python.tar.gz", shell=True)
 
 subprocess.call("tar xzfv cifar-100-python.tar.gz", shell=True)
 
