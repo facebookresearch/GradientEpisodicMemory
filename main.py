@@ -15,7 +15,6 @@ import os
 import numpy as np
 
 import torch
-from torch.autograd import Variable
 from metrics.metrics import confusion_matrix
 
 # continuum iterator #########################################################
@@ -26,8 +25,8 @@ def load_datasets(args):
     n_inputs = d_tr[0][1].size(1)
     n_outputs = 0
     for i in range(len(d_tr)):
-        n_outputs = max(n_outputs, d_tr[i][2].max())
-        n_outputs = max(n_outputs, d_te[i][2].max())
+        n_outputs = max(n_outputs, d_tr[i][2].max().item())
+        n_outputs = max(n_outputs, d_te[i][2].max().item())
     return d_tr, d_te, n_inputs, n_outputs + 1, len(d_tr)
 
 
@@ -112,7 +111,6 @@ def eval_tasks(model, tasks, args):
                 yb = y[b_from:b_to]
             if args.cuda:
                 xb = xb.cuda()
-            xb = Variable(xb, volatile=True)
             _, pb = torch.max(model(xb, t).data.cpu(), 1, keepdim=False)
             rt += (pb == yb).float().sum()
 
@@ -142,7 +140,7 @@ def life_experience(model, continuum, x_te, args):
             v_y = v_y.cuda()
 
         model.train()
-        model.observe(Variable(v_x), t, Variable(v_y))
+        model.observe(v_x, t, v_y)
 
     result_a.append(eval_tasks(model, x_te, args))
     result_t.append(current_task)

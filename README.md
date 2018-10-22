@@ -12,3 +12,6 @@ Source code for [the paper](https://arxiv.org/abs/1706.08840):
 ```
 
 To replicate the experiments, execute `./run_experiments.sh`.
+
+This source code is released under a Attribution-NonCommercial 4.0 International
+license, find out more about it [here](LICENSE).

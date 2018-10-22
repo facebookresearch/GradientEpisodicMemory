@@ -5,7 +5,6 @@
 # LICENSE file in the root directory of this source tree.
 
 import torch
-from torch.autograd import Variable
 
 import numpy as np
 import random
@@ -45,8 +44,8 @@ class Net(torch.nn.Module):
         # setup losses
         self.bce = torch.nn.CrossEntropyLoss()
         self.kl = torch.nn.KLDivLoss()  # for distillation
-        self.lsm = torch.nn.LogSoftmax()
-        self.sm = torch.nn.Softmax()
+        self.lsm = torch.nn.LogSoftmax(dim=1)
+        self.sm = torch.nn.Softmax(dim=1)
 
         # memory
         self.memx = None  # stores raw inputs, PxD
@@ -76,28 +75,28 @@ class Net(torch.nn.Module):
                 1.0 / self.nc_per_task)
             if self.gpu:
                 out = out.cuda()
-            return Variable(out)
+            return out
         means = torch.ones(self.nc_per_task, nd) * float('inf')
         if self.gpu:
             means = means.cuda()
         offset1, offset2 = self.compute_offsets(t)
         for cc in range(offset1, offset2):
             means[cc -
-                  offset1] = self.net(Variable(self.mem_class_x[cc])).data.mean(0)
+                  offset1] = self.net(self.mem_class_x[cc]).data.mean(0)
         classpred = torch.LongTensor(ns)
         preds = self.net(x).data.clone()
         for ss in range(ns):
             dist = (means - preds[ss].expand(self.nc_per_task, nd)).norm(2, 1)
             _, ii = dist.min(0)
             ii = ii.squeeze()
-            classpred[ss] = ii[0] + offset1
+            classpred[ss] = ii.item() + offset1
 
         out = torch.zeros(ns, self.n_classes)
         if self.gpu:
             out = out.cuda()
         for ss in range(ns):
             out[ss, classpred[ss]] = 1
-        return Variable(out)  # return 1-of-C code, ns x nc
+        return out  # return 1-of-C code, ns x nc
 
     def forward_training(self, x, t):
         output = self.net(x)
@@ -137,15 +136,15 @@ class Net(torch.nn.Module):
                     inp_dist = inp_dist.cuda()
                     target_dist = target_dist.cuda()
                 for cc in range(self.nc_per_task):
-                    indx = random.randint(0, self.num_exemplars - 1)
+                    indx = random.randint(0, len(self.mem_class_x[cc + offset1]) - 1)
                     inp_dist[cc] = self.mem_class_x[cc + offset1][indx].clone()
                     target_dist[cc] = self.mem_class_y[cc +
                                                        offset1][indx].clone()
                 # Add distillation loss
                 loss += self.reg * self.kl(
-                    self.lsm(self.net(Variable(inp_dist))
+                    self.lsm(self.net(inp_dist)
                              [:, offset1: offset2]),
-                    self.sm(Variable(target_dist[:, offset1: offset2]))) * self.nc_per_task
+                    self.sm(target_dist[:, offset1: offset2])) * self.nc_per_task
         # bprop and update
         loss.backward()
         self.opt.step()
@@ -166,12 +165,12 @@ class Net(torch.nn.Module):
                                      (num_classes + len(self.mem_class_x.keys())))
             offset1, offset2 = self.compute_offsets(t)
             for ll in range(num_classes):
-                lab = all_labs[ll]
+                lab = all_labs[ll].cuda()
                 indxs = (self.memy == lab).nonzero().squeeze()
                 cdata = self.memx.index_select(0, indxs)
 
                 # Construct exemplar set for last task
-                mean_feature = self.net(Variable(cdata))[
+                mean_feature = self.net(cdata)[
                     :, offset1: offset2].data.clone().mean(0)
                 nd = self.nc_per_task
                 exemplars = torch.zeros(self.num_exemplars, x.size(1))
@@ -180,14 +179,14 @@ class Net(torch.nn.Module):
                 ntr = cdata.size(0)
                 # used to keep track of which examples we have already used
                 taken = torch.zeros(ntr)
-                model_output = self.net(Variable(cdata))[
+                model_output = self.net(cdata)[
                     :, offset1: offset2].data.clone()
                 for ee in range(self.num_exemplars):
                     prev = torch.zeros(1, nd)
                     if self.gpu:
                         prev = prev.cuda()
                     if ee > 0:
-                        prev = self.net(Variable(exemplars[:ee]))[
+                        prev = self.net(exemplars[:ee])[
                             :, offset1: offset2].data.clone().sum(0)
                     cost = (mean_feature.expand(ntr, nd) - (model_output
                                                             + prev.expand(ntr, nd)) / (ee + 1)).norm(2, 1).squeeze()
@@ -203,11 +202,11 @@ class Net(torch.nn.Module):
                         self.num_exemplars = indx.size(0)
                         break
                 # update memory with exemplars
-                self.mem_class_x[lab] = exemplars.clone()
+                self.mem_class_x[lab.item()] = exemplars.clone()
 
             # recompute outputs for distillation purposes
             for cc in self.mem_class_x.keys():
                 self.mem_class_y[cc] = self.net(
-                    Variable(self.mem_class_x[cc])).data.clone()
+                    self.mem_class_x[cc]).data.clone()
             self.memx = None
             self.memy = None

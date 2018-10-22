@@ -5,7 +5,6 @@
 # LICENSE file in the root directory of this source tree.
 
 import torch
-from torch.autograd import Variable
 from .common import MLP, ResNet18
 
 
@@ -56,7 +55,7 @@ class Net(torch.nn.Module):
             bigoutput.fill_(-10e10)
             bigoutput[:, int(t * self.nc_per_task): int((t + 1) * self.nc_per_task)].copy_(
                 output.data)
-            return Variable(bigoutput)
+            return bigoutput
         else:
             return output
 

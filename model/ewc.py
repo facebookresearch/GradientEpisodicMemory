@@ -5,7 +5,6 @@
 # LICENSE file in the root directory of this source tree.
 
 import torch
-from torch.autograd import Variable
 from .common import MLP, ResNet18
 
 
@@ -76,12 +75,12 @@ class Net(torch.nn.Module):
 
             if self.is_cifar:
                 offset1, offset2 = self.compute_offsets(self.current_task)
-                self.bce((self.net(Variable(self.memx))[:, offset1: offset2]),
-                         Variable(self.memy) - offset1).backward()
+                self.bce((self.net(self.memx)[:, offset1: offset2]),
+                         self.memy - offset1).backward()
             else:
-                self.bce(self(Variable(self.memx),
+                self.bce(self(self.memx,
                               self.current_task),
-                         Variable(self.memy)).backward()
+                         self.memy).backward()
             self.fisher[self.current_task] = []
             self.optpar[self.current_task] = []
             for p in self.net.parameters():
@@ -113,8 +112,8 @@ class Net(torch.nn.Module):
             loss = self.bce(self(x, t), y)
         for tt in range(t):
             for i, p in enumerate(self.net.parameters()):
-                l = self.reg * Variable(self.fisher[tt][i])
-                l = l * (p - Variable(self.optpar[tt][i])).pow(2)
+                l = self.reg * self.fisher[tt][i]
+                l = l * (p - self.optpar[tt][i]).pow(2)
                 loss += l.sum()
         loss.backward()
         self.opt.step()

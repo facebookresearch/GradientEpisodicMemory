@@ -49,7 +49,7 @@ class Net(nn.Module):
             reset_bias(self.i_layer[-1])
 
         self.relu = nn.ReLU()
-        self.soft = nn.LogSoftmax()
+        self.soft = nn.LogSoftmax(dim=1)
         self.loss = nn.NLLLoss()
         self.optimizer = torch.optim.SGD(self.parameters(), args.lr)
 

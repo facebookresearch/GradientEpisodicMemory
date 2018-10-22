@@ -7,7 +7,6 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.autograd import Variable
 
 import numpy as np
 import quadprog
@@ -68,7 +67,7 @@ def overwrite_grad(pp, newgrad, grad_dims):
         cnt += 1
 
 
-def project2cone2(gradient, memories, margin=0.5):
+def project2cone2(gradient, memories, margin=0.5, eps=1e-3):
     """
         Solves the GEM dual QP described in the paper given a proposed
         gradient "gradient", and a memory of task gradients "memories".
@@ -82,7 +81,7 @@ def project2cone2(gradient, memories, margin=0.5):
     gradient_np = gradient.cpu().contiguous().view(-1).double().numpy()
     t = memories_np.shape[0]
     P = np.dot(memories_np, memories_np.transpose())
-    P = 0.5 * (P + P.transpose())
+    P = 0.5 * (P + P.transpose()) + np.eye(t) * eps
     q = np.dot(memories_np, gradient_np) * -1
     G = np.eye(t)
     h = np.zeros(t) + margin
@@ -183,9 +182,9 @@ class Net(nn.Module):
                                                    self.is_cifar)
                 ptloss = self.ce(
                     self.forward(
-                        Variable(self.memory_data[past_task]),
+                        self.memory_data[past_task],
                         past_task)[:, offset1: offset2],
-                    Variable(self.memory_labs[past_task] - offset1))
+                    self.memory_labs[past_task] - offset1)
                 ptloss.backward()
                 store_grad(self.parameters, self.grads, self.grad_dims,
                            past_task)
